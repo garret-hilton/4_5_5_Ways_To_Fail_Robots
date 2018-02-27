@@ -14,6 +14,8 @@ from tkinter import *
 from tkinter import font
 from tkinter import messagebox
 import _thread
+import Run
+import Menu
 
 class GuiTest():
     def __init__(self, r, c=None):
@@ -24,13 +26,13 @@ class GuiTest():
         self.timeToWait = 5
         self.flag1 = False
         self.dropBoxFlag = False
-        self.imgDropped = False
+        #self.imgDropped = False
         self.x = 10
         self.y = 50
         self.deltaX1 = 0
-        self.deltaX2 = 0
+        #self.deltaX2 = 0
         self.deltaY1 = 0
-        self.deltaY2 = 0
+        #self.deltaY2 = 0
         self.buttonID = 0
         self.font1 = font.Font(family="Times",size=30, weight="bold", slant="italic")
         self.font2 = font.Font(family="Times",size=15, weight="bold", slant="italic")
@@ -43,10 +45,10 @@ class GuiTest():
         self.imgTiltH = PhotoImage(file="TiltHead.gif")
         self.imgTurnH = PhotoImage(file="TurnHead.gif")
         self.actionString = " "
-        if self.imgDropped == False:
-            self.imgID = self.imgForBack
-        else:
-            self.imgID = self.imgID
+        #if self.imgDropped == False:
+        #    self.imgID = self.imgForBack
+        #else:
+        #    self.imgID = self.imgID
         #self.listbox = Listbox(r, yscrollcommand=self.scrollbar.set, height=5)
         #self.listbox.pack(side=RIGHT, fill=BOTH)
         self.scrollbar = Scrollbar(r)
@@ -58,6 +60,8 @@ class GuiTest():
         self.listbox.config(yscrollcommand=self.scrollbar.set)
         self.scrollbar.config(command=self.listbox.yview)
 
+        fileMenu = Menu.FileMenu(self.root, self.listbox)
+
         self.canvasW = 630
         self.canvasH = 400
         self.c = tk.Canvas(self.root, bg="#333333", width = self.canvasW, height=self.canvasH)
@@ -68,18 +72,18 @@ class GuiTest():
         self.c.bind('<ButtonRelease-1>', self.mouseRelease)
         #self.c.create_oval(5, 5, 45, 45, fill="#FFFF00")
         self.drawStuff()
-        self.c.bind('<Motion>', self.motion)
+        #self.c.bind('<Motion>', self.motion)
         r.title("TangoBot")
-        r.bind('<Up>', self.arrow)
-        r.bind('<Left>', self.arrow)
-        r.bind('<Down>', self.arrow)
-        r.bind('<Right>', self.arrow)
+        #r.bind('<Up>', self.arrow)
+        #r.bind('<Left>', self.arrow)
+        #r.bind('<Down>', self.arrow)
+        #r.bind('<Right>', self.arrow)
         self.c.grid(row=1, column=1, rowspan=5, columnspan=5)
         button = tk.Button(self.root, width="15", text="Put in Queue", font=self.font2, bg="blue", fg="yellow", command=self.addToQueue)
         button.grid(row=6, column=5)
-        button2 = tk.Button(self.root, width="15", text="Move Up",font=self.font2, bg="blue", fg="yellow", command=self.fun)
+        button2 = tk.Button(self.root, width="15", text="Move Up",font=self.font2, bg="blue", fg="yellow", command=self.moveUp)
         button2.grid(row=3, column=6, sticky=E+W)
-        button3 = tk.Button(self.root, width="15", text="Move Down",font=self.font2, bg="blue", fg="yellow", command=self.fun)
+        button3 = tk.Button(self.root, width="15", text="Move Down",font=self.font2, bg="blue", fg="yellow", command=self.moveDown)
         button3.grid(row=4, column=6, sticky=E+W)
         button4 = tk.Button(self.root, width="15", text="Run",font=self.font2, bg="green3", fg="yellow", command=self.runQueue)
         button4.grid(row=6, column=6, rowspan=2, sticky=N+S+W+E)
@@ -99,10 +103,6 @@ class GuiTest():
         label2.grid(row=7, column=1)
         label3=tk.Label(self.root, text="Action Queue", font=self.font3)
         label3.grid(row = 1, column = 6)
-
-
-
-
 
 
     def drawStuff(self):
@@ -126,13 +126,13 @@ class GuiTest():
 
     def mousePressed(self, event):
         self.deltaX1 = event.x - 10
-        self.deltaX2 = 145 - event.x
+        #self.deltaX2 = 145 - event.x
         if (event.x > self.x and event.x < self.x + 145) and (event.y > self.y and event.y < self.y + 45):
             self.buttonID = 1
             self.imgID = self.imgForBack
             self.flag1 = True
             self.deltaY1 = event.y - 50
-            self.deltaY2 = 95 - event.y
+            #self.deltaY2 = 95 - event.y
             #self.color = "#FFFF00"
             self.actionString = "For/Back  :"
         elif (event.x > self.x and event.x < self.x + 145) and (event.y > 105 and event.y < 150):
@@ -140,7 +140,7 @@ class GuiTest():
             self.imgID = self.imgTurnR
             self.flag1 = True
             self.deltaY1 = event.y - 105
-            self.deltaY2 = 150 - event.y
+            #self.deltaY2 = 150 - event.y
             #self.color = "#3377AA"
             self.actionString = "Turn Robot:"
         elif (event.x > self.x and event.x < self.x + 145) and (event.y > 160 and event.y < 205):
@@ -148,7 +148,7 @@ class GuiTest():
             self.imgID = self.imgTurnB
             self.flag1 = True
             self.deltaY1 = event.y - 160
-            self.deltaY2 = 205 - event.y
+            #self.deltaY2 = 205 - event.y
             #self.color = "#00FF00"
             self.actionString = "Turn Body :"
         elif (event.x > self.x and event.x < self.x + 145) and (event.y > 215 and event.y < 260):
@@ -156,7 +156,7 @@ class GuiTest():
             self.imgID = self.imgTurnH
             self.flag1 = True
             self.deltaY1 = event.y - 215
-            self.deltaY2 = 260 - event.y
+            #self.deltaY2 = 260 - event.y
             #self.color = "#FF0F00"
             self.actionString = "Turn Head :"
         elif (event.x > self.x and event.x < self.x + 145) and (event.y > 270 and event.y < 305):
@@ -164,7 +164,7 @@ class GuiTest():
             self.imgID = self.imgTiltH
             self.flag1 = True
             self.deltaY1 = event.y - 270
-            self.deltaY2 = 315 - event.y
+            #self.deltaY2 = 315 - event.y
             #self.color = "#111555"
             self.actionString = "Tilt Head :"
     def mouseDragged(self, event):
@@ -174,7 +174,7 @@ class GuiTest():
 
 
     def mouseRelease(self, event):
-        self.imgDropped = True
+        #self.imgDropped = True
         if self.flag1 == True:
             self.flag1 = False
             self.drawStuff()
@@ -220,25 +220,25 @@ class GuiTest():
             self.c.create_text(380, 180,font=self.font2, text="PWM = 6000 => Tilt Head to Center", fill="#777777")
             self.c.create_text(380, 200,font=self.font2, text="PWM = 8000 => Tilt Head for Down", fill="#777777")
             self.c.create_text(380, 220,font=self.font2, text="Time = Time (sec) to Tilt Head", fill="#777777")
-    def arrow(self, key):
-        if key.keycode==114:
-            self.timeToWait = 5
-            print("Right\nWating for %f" % self.timeToWait)
-            try:
-                _thread.start_new_thread(self.timer, ())
-            except:
-               print ("Error: unable to start thread")
-        elif key.keycode==111:
-            self.timeToWait = 1
-            try:
-                _thread.start_new_thread(self.timer, ())
-            except:
-               print ("Error: unable to start thread")
-            print("Up\nWating for %f" % self.timeToWait)
-        elif key.keycode==116:
-            print("Down")
-        elif key.keycode==113:
-            print("Left")
+    #def arrow(self, key):
+    #    if key.keycode==114:
+    #        self.timeToWait = 5
+    #        print("Right\nWating for %f" % self.timeToWait)
+    #        try:
+    #            _thread.start_new_thread(self.timer, ())
+    #        except:
+    #           print ("Error: unable to start thread")
+    #    elif key.keycode==111:
+    #        self.timeToWait = 1
+    #        try:
+    #            _thread.start_new_thread(self.timer, ())
+    #        except:
+    #           print ("Error: unable to start thread")
+    #        print("Up\nWating for %f" % self.timeToWait)
+    #    elif key.keycode==116:
+    #        print("Down")
+    #    elif key.keycode==113:
+    #        print("Left")
 
     def removeAction(self):
         self.dropBoxFlag = False
@@ -264,6 +264,27 @@ class GuiTest():
             print("Function Added to Queue")
         else:
             messagebox.showerror("Error", "No Action Selected\nPlease Place an Action\nin the Drop Box")
+    def moveUp(self):
+        pos = self.listbox.curselection()
+        if pos[0] == 0:
+            messagebox.showerror("Error", "Selection is Already at The Top")
+            return
+
+        text = self.listbox.get(pos[0])
+        self.listbox.delete(pos[0])
+        self.listbox.insert(pos[0]-1, text)
+
+    def moveDown(self):
+        pos = self.listbox.curselection()
+        last = self.listbox.size()
+        if pos[0] == last-1:
+            messagebox.showerror("Error", "Selection is Already at The Bottom")
+            return
+
+        text = self.listbox.get(pos[0])
+        self.listbox.delete(pos[0])
+        self.listbox.insert(pos[0]+1, text)
+
 
     def fun(self):
         self.drawStuff()
@@ -271,9 +292,9 @@ class GuiTest():
         self.y = 10
         print("Button is pushed")
 
-    def motion(self, event):
-        print("Mouse position: (%s %s)" % (event.x, event.y))
-        return
+    #def motion(self, event):
+        #print("Mouse position: (%s %s)" % (event.x, event.y))
+    #    return
 
     def removeQueue(self):
         try:
@@ -285,22 +306,24 @@ class GuiTest():
     def runQueue(self):
         size = self.listbox.size()
         queue = self.listbox.get(0, size)
-        print(queue)
-        print(queue[0])
-        self.listbox.select_set(0)
-        #size = self.listbox.size()
-        print(size)
-        selection = self.listbox.curselection()
-        string = self.listbox.get(selection)
-        value = string.split(",")
-        i = 0
-        channels = value[0].split(":")
-        channel = channels[1]
-        times = value[1].split(":")
-        time = times[1]
-        speeds = value[2].split(":")
-        speed = speeds[1]
-        print(channel + " " + time + " " + speed + "\n")
+        q1 = Run.Run(queue, size, self.c)
+        try:
+            _thread.start_new_thread(q1.runQueue, ())
+        except:
+            print ("Error: unable to start thread")
+        try:
+            _thread.start_new_thread(self.wait, (q1,))
+        except:
+            print ("Error: unable to start thread wait")
+
+    def wait(self, q1):
+        test = 0
+        while (test != 1):
+            test = q1.getComplete()
+            pass
+        q1.setComplete()
+        self.drawStuff()
+
 
 
 def __main__():
@@ -308,11 +331,6 @@ def __main__():
 
     root = tk.Tk()
     gui = GuiTest(root)
-    #root.bind('<Up>', gui.arrow)
-    #root.bind('<Left>', gui.arrow)
-    #root.bind('<Down>', gui.arrow)
-    #root.bind('<Right>', gui.arrow)
-    #root.bind('<Button>', gui.mouseClick)
     root.mainloop()
 
 
