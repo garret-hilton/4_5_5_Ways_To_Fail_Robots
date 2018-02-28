@@ -21,6 +21,7 @@ class GuiTest():
     def __init__(self, r, c=None):
         self.client = c
         self.root = r
+        #elf.root.attributes('-fullscreen', True) # uncoment for full sceeen
         #self.flag = True
         self.speed = .8
         self.timeToWait = 5
@@ -62,7 +63,7 @@ class GuiTest():
 
         fileMenu = Menu.FileMenu(self.root, self.listbox)
 
-        self.canvasW = 630
+        self.canvasW = 530
         self.canvasH = 400
         self.c = tk.Canvas(self.root, bg="#333333", width = self.canvasW, height=self.canvasH)
         #self.c2 = tk.Canvas( self.root, bg="#333333", width = 150, height=50)
@@ -112,17 +113,17 @@ class GuiTest():
         self.c.create_image(10, 160,anchor=NW, image=self.imgTurnB)
         self.c.create_image(10, 215,anchor=NW, image=self.imgTurnH)
         self.c.create_image(10, 270,anchor=NW, image=self.imgTiltH)
-        self.c.create_text(380, 30,font=self.font1, text="Drop Box", fill="#777777")
+        self.c.create_text(330, 30,font=self.font1, text="Drop Box", fill="#777777")
         self.c.create_text(80, 30,font=self.font1, text="Actions:", fill="#777777")
-        self.c.create_rectangle(160, 50, 600, 300, width=5, fill="#444444")
+        self.c.create_rectangle(160, 50, 500, 300, width=5, fill="#444444")
 
     def drawButton1(self):
         self.c.create_rectangle(10, 50, 145, 95, fill="#FFFF00", width=5)
 
-    def timer(self):
-        temp = self.timeToWait
-        time.sleep(self.timeToWait)
-        print("Timer for %f seconds has ended" % temp)
+    #def timer(self):
+    #    temp = self.timeToWait
+    #    time.sleep(self.timeToWait)
+    #    print("Timer for %f seconds has ended" % temp)
 
     def mousePressed(self, event):
         self.deltaX1 = event.x - 10
@@ -144,7 +145,7 @@ class GuiTest():
             #self.color = "#3377AA"
             self.actionString = "Turn Robot:"
         elif (event.x > self.x and event.x < self.x + 145) and (event.y > 160 and event.y < 205):
-            self.buttonID = 3
+            self.buttonID = 0
             self.imgID = self.imgTurnB
             self.flag1 = True
             self.deltaY1 = event.y - 160
@@ -152,7 +153,7 @@ class GuiTest():
             #self.color = "#00FF00"
             self.actionString = "Turn Body :"
         elif (event.x > self.x and event.x < self.x + 145) and (event.y > 215 and event.y < 260):
-            self.buttonID = 4
+            self.buttonID = 3
             self.imgID = self.imgTurnH
             self.flag1 = True
             self.deltaY1 = event.y - 215
@@ -160,7 +161,7 @@ class GuiTest():
             #self.color = "#FF0F00"
             self.actionString = "Turn Head :"
         elif (event.x > self.x and event.x < self.x + 145) and (event.y > 270 and event.y < 305):
-            self.buttonID = 5
+            self.buttonID = 4
             self.imgID = self.imgTiltH
             self.flag1 = True
             self.deltaY1 = event.y - 270
@@ -186,8 +187,8 @@ class GuiTest():
                 self.printSettings()
                 self.x = 10
                 self.y = 50
-            print("Released at:\n    x: %f" % self.x)
-            print("\n    y: %f" %  self.y)
+            #print("Released at:\n    x: %f" % self.x)
+            #print("\n    y: %f" %  self.y)
 
     def printSettings(self):
         if self.buttonID == 1:
@@ -202,19 +203,19 @@ class GuiTest():
             self.c.create_text(380, 180,font=self.font2, text="PWM = 6000 => No Turn:", fill="#777777")
             self.c.create_text(380, 200,font=self.font2, text="PWM = 8000 => Fast Right turn", fill="#777777")
             self.c.create_text(380, 220,font=self.font2, text="Time = Time (sec) to Turn Left / Right", fill="#777777")
-        elif self.buttonID == 3:
+        elif self.buttonID == 0:
             self.c.create_text(380, 125,font=self.font3, text="Turn Body Settings:", fill="#777777")
             self.c.create_text(380, 160,font=self.font2, text="PWM = 4000 => Turn Body Far Left", fill="#777777")
             self.c.create_text(380, 180,font=self.font2, text="PWM = 6000 => Face Body Forward", fill="#777777")
             self.c.create_text(380, 200,font=self.font2, text="PWM = 8000 => Turn Body Far Right", fill="#777777")
             self.c.create_text(380, 220,font=self.font2, text="Time = Time (sec) to Turn Body", fill="#777777")
-        elif self.buttonID == 4:
+        elif self.buttonID == 3:
             self.c.create_text(380, 125,font=self.font3, text="Turn Head Settings:", fill="#777777")
             self.c.create_text(380, 160,font=self.font2, text="PWM = 4000 => Turn Head Far Left", fill="#777777")
             self.c.create_text(380, 180,font=self.font2, text="PWM = 6000 => Head Face Forward", fill="#777777")
             self.c.create_text(380, 200,font=self.font2, text="PWM = 8000 => Turn Head Far Right", fill="#777777")
             self.c.create_text(380, 220,font=self.font2, text="Time = Time (sec) to Turn Head", fill="#777777")
-        elif self.buttonID == 5:
+        elif self.buttonID == 4:
             self.c.create_text(380, 125,font=self.font3, text="Tilt Head Settings:", fill="#777777")
             self.c.create_text(380, 160,font=self.font2, text="PWM = 4000 => Tilt Head far Up", fill="#777777")
             self.c.create_text(380, 180,font=self.font2, text="PWM = 6000 => Tilt Head to Center", fill="#777777")
@@ -265,25 +266,29 @@ class GuiTest():
         else:
             messagebox.showerror("Error", "No Action Selected\nPlease Place an Action\nin the Drop Box")
     def moveUp(self):
-        pos = self.listbox.curselection()
-        if pos[0] == 0:
-            messagebox.showerror("Error", "Selection is Already at The Top")
-            return
-
-        text = self.listbox.get(pos[0])
-        self.listbox.delete(pos[0])
-        self.listbox.insert(pos[0]-1, text)
+        try:
+            pos = self.listbox.curselection()
+            if pos[0] == 0:
+                messagebox.showerror("Error", "Selection is Already at The Top")
+                return
+            text = self.listbox.get(pos[0])
+            self.listbox.delete(pos[0])
+            self.listbox.insert(pos[0]-1, text)
+        except:
+            messagebox.showerror("Error", "No Action Selected\nPlease Select an Item In \n the Queue to Move")
 
     def moveDown(self):
-        pos = self.listbox.curselection()
-        last = self.listbox.size()
-        if pos[0] == last-1:
-            messagebox.showerror("Error", "Selection is Already at The Bottom")
-            return
-
-        text = self.listbox.get(pos[0])
-        self.listbox.delete(pos[0])
-        self.listbox.insert(pos[0]+1, text)
+        try:
+            pos = self.listbox.curselection()
+            last = self.listbox.size()
+            if pos[0] == last-1:
+                messagebox.showerror("Error", "Selection is Already at The Bottom")
+                return
+            text = self.listbox.get(pos[0])
+            self.listbox.delete(pos[0])
+            self.listbox.insert(pos[0]+1, text)
+        except:
+            messagebox.showerror("Error", "No Action Selected\nPlease Select an Item In \n the Queue to Move")
 
 
     def fun(self):
@@ -306,7 +311,7 @@ class GuiTest():
     def runQueue(self):
         size = self.listbox.size()
         queue = self.listbox.get(0, size)
-        q1 = Run.Run(queue, size, self.c)
+        q1 = Run.Run(queue, size, self.c, self.root)
         try:
             _thread.start_new_thread(q1.runQueue, ())
         except:
@@ -327,7 +332,6 @@ class GuiTest():
 
 
 def __main__():
-    print("Hello\n")
 
     root = tk.Tk()
     gui = GuiTest(root)
