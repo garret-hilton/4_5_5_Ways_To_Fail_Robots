@@ -20,8 +20,15 @@ class FileMenu():
         self.menuBar.add_cascade(label="File", menu=self.fileMenu)
         self.editmenu = Menu(self.menuBar, tearoff=0)
         self.editmenu.add_command(label="DeleteQueue", command=self.deleteQueue)
+        self.editmenu.add_command(label="Reset Servos", command=self.resetAllServos)
         self.menuBar.add_cascade(label="Edit", menu=self.editmenu)
-        
+     
+    def resetAllServos(self):
+        control = Maestro.Controller()	
+        control.setTarget(0, 6000)
+        control.setTarget(3, 6000)
+        control.setTarget(4, 6000)
+		
     def deleteQueue(self):
         end = self.listbox.size()
         self.listbox.delete(0, end)

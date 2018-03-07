@@ -21,7 +21,7 @@ class GuiTest():
     def __init__(self, r, c=None):
         self.client = c
         self.root = r
-        #self.root.attributes('-fullscreen', True)
+        self.root.attributes('-fullscreen', True)
         self.speed = .8
         self.timeToWait = 5
         self.flag1 = False
@@ -49,8 +49,8 @@ class GuiTest():
         self.listbox.config(yscrollcommand=self.scrollbar.set)
         self.scrollbar.config(command=self.listbox.yview)
         fileMenu = Menu.FileMenu(self.root, self.listbox)
-        self.canvasW = 530
-        self.canvasH = 350
+        self.canvasW = 510
+        self.canvasH = 330
         self.c = tk.Canvas(self.root, bg="#333333", width = self.canvasW, height=self.canvasH)
         self.c.bind('<B1-Motion>', self.mouseDragged)
         self.c.bind('<ButtonPress-1>', self.mousePressed)
@@ -69,13 +69,73 @@ class GuiTest():
         button5 = tk.Button(self.root, width="15", text="Remove Action\nFrom Drop Box",font=self.font2, bg="blue", fg="yellow", command=self.removeAction)
         button5.grid(row=7, column=5)
         button6 = tk.Button(self.root, width="10", text="Remove",font=self.font2, bg="blue", fg="yellow", command=self.removeQueue)
-        button6.grid(row=5, column=6, sticky=E+W)
+        button6.grid(row=4, column=6, sticky=E+W)
+        button7 = tk.Button(self.root, width="10", text="Delete All",font=self.font2, bg="blue", fg="yellow", command=self.deleteQueue)
+        button7.grid(row=4, column=7, sticky=E+W)
+        button8 = tk.Button(self.root, width="10", text="Edit",font=self.font2, bg="blue", fg="yellow", command=self.editQueue)
+        button8.grid(row=5, column=6, sticky=E+W, columnspan=2)
         self.s1 = Scale(self.root, from_=0, to=10, orient=HORIZONTAL, resolution=0.1, width=30)
-        self.s2 = Scale(self.root, from_=4000, to=8000, orient=HORIZONTAL, width=30)
+        self.s2 = Scale(self.root, from_=4000, to=8000, orient=HORIZONTAL, resolution=250, width=30)
         self.label1=tk.Label(self.root, text="Set Time", font=self.font2)
         self.label2=tk.Label(self.root, text="Set PWM", font=self.font2)
         self.label3=tk.Label(self.root, text="Action Queue", font=self.font3)
         self.label3.grid(row = 1, column = 6, columnspan=2)
+
+    def editQueue(self):
+        try:
+            self.pos = self.listbox.curselection()
+            string = self.listbox.get(self.listbox.curselection())
+            #print(self.pos)
+
+        except:
+            messagebox.showerror("Error", "No Action Selected\nPlease Select an Item In \n the Queue to Edit")
+            return
+
+        self.t = Toplevel(self.root)
+        self.t.attributes('-fullscreen', True)
+        self.t.wm_title("Edit Window")
+        label3 = tk.Label(self.t, text=string, font=self.font3)
+        label3.grid(row = 1, column = 1, columnspan=3)
+        label1 = tk.Label(self.t, text="PWM")
+        label1.grid(row = 2, column = 1, columnspan=1)
+        label2 = tk.Label(self.t, text="Time")
+        label2.grid(row = 3, column = 1, columnspan=1)
+        label3 = tk.Label(self.t, text="                                                             ")
+        label3.grid(row = 5, column = 1, columnspan=5)
+        self.s3 = Scale(self.t, from_=0, to=10, orient=HORIZONTAL, resolution=0.1, width=30)
+        self.s4 = Scale(self.t, from_=4000, to=8000, orient=HORIZONTAL, resolution=250, width=30)
+        button = tk.Button(self.t, width="10", text="OK",font=self.font2, bg="blue", fg="yellow", command=self.closeWindow)
+        button.grid(row=4, column=2, sticky=E+W, columnspan=2)
+        self.s3.grid(row=3, column=2, columnspan=4, sticky=N+S+W+E)
+        self.s3.set(1.0)
+        self.s4.grid(row=2, column=2, columnspan=4, sticky=N+S+W+E)
+        self.s4.set(6000)
+
+    def parse(self):
+        string = self.listbox.get(self.listbox.curselection())
+        value = string.split(",")
+        channels = value[0].split(":")
+        times = value[1].split(":")
+        speeds = value[2].split(":")
+
+    def closeWindow(self):
+        string = self.listbox.get(self.listbox.curselection())
+        value = string.split(",")
+        channel = value[0].split(":")
+        #print(channel)
+        try:
+            pos = self.listbox.curselection()
+            text = (str(channel[0]) + ":" + str(channel[1]) + "," +" T :" + str(self.s3.get()) + "," + " S :" +  str(self.s4.get() ) )
+            self.listbox.delete(pos[0])
+            self.listbox.insert(pos[0], text)
+        except:
+            messagebox.showerror("Error", "No Action Selected\nPlease Select an Item In \n the Queue to Edit")
+        self.t.withdraw()
+        #self.listbox.selection_set(0, 0)
+
+    def deleteQueue(self):
+        end = self.listbox.size()
+        self.listbox.delete(0, end)
 
     def showScales(self):
         if   self.buttonID == 0:
@@ -198,9 +258,9 @@ class GuiTest():
             self.c.create_text(328, 220,font=self.font2, text="Time = Time (sec) to Drive forward / backwards", fill="#777777")
         elif self.buttonID == 2:
             self.c.create_text(328, 125,font=self.font3, text="Turn Settings:", fill="#777777")
-            self.c.create_text(328, 160,font=self.font2, text="PWM = 4000 => Fast Left Turn", fill="#777777")
+            self.c.create_text(328, 160,font=self.font2, text="PWM = 4000 => Fast Right Turn", fill="#777777")
             self.c.create_text(328, 180,font=self.font2, text="PWM = 6000 => No Turn:", fill="#777777")
-            self.c.create_text(328, 200,font=self.font2, text="PWM = 8000 => Fast Right turn", fill="#777777")
+            self.c.create_text(328, 200,font=self.font2, text="PWM = 8000 => Fast Left turn", fill="#777777")
             self.c.create_text(328, 220,font=self.font2, text="Time = Time (sec) to Turn Left / Right", fill="#777777")
         elif self.buttonID == 0:
             self.c.create_text(328, 125,font=self.font3, text="Turn Body Settings:", fill="#777777")

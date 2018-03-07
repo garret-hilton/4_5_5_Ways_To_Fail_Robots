@@ -22,53 +22,61 @@ class Run():
         rows = self.queueSize
         self.index = 0
         self.done = False
-        self.font3 = font.Font(family="Times",size=20, weight="bold", slant="italic")
+        self.font3 = font.Font(family="Times",size=30, weight="bold", slant="italic")
         self.queue = [0] * rows
         for i in range (rows):
             self.queue[i] = [0] * columns
         self.parse()
 
     def startAnimation(self):
-        x = 50
-        inc = 5
+        x = 140
+        inc = 6
         midRow = int(self.canvasH/2)
         midCol = int(self.canvasW/2)
         while (self.done == False):
             x = x + inc
             if self.refresh == True:
                 self.c.delete("all")
-                self.c.create_text(400, 430,font=self.font3, text=self.fullQueue[self.index], fill="#ffffff")
+                self.c.create_text(400, 430,font=self.font3, text=self.fullQueue[self.index], fill="orange2")
                 self.root.update()
                 self.refresh = False
-            if x == 225:
-                #inc = -25
-                inc = -5
-            elif x == 50:
-                #inc = 25
-                inc = 5
-            self.c.create_oval(5, 5, midCol-5, self.canvasH-40, fill="#000000") #left eye
-            self.c.create_oval(midCol+5, 5, self.canvasW, self.canvasH-40, fill="#000000") #right eye
-            self.c.create_oval(x, 220, x+100, 320, fill="#ffffff") # left pupil
-            self.c.create_oval(x+425, 220, x+525, 320, fill="#ffffff") # right eye
+            if x == 212:
+                inc = -6
+            elif x == 68:
+                inc = 6
+            self.c.create_oval(5, 50, midCol-5, self.canvasH-90, fill="#ffffff") #left eye
+            self.c.create_oval(midCol+5, 50, self.canvasW, self.canvasH-90, fill="#ffffff") #right eye
+            self.c.create_oval(x-25, 195, x+125, 345, fill="blue2") # left color
+            self.c.create_oval(x+400, 195, x+550, 345, fill="blue2") # right color
+            self.c.create_oval(x, 220, x+100, 320, fill="#000000") # left pupil
+            self.c.create_oval(x+425, 220, x+525, 320, fill="#000000") # right eye
             self.c.update()
             time.sleep(0.001)
         self.done = False
 
     def executeCommands(self):
-        control = Maestro.Controller()
+        #control = Maestro.Controller()
         for i in range(self.queueSize):
             self.refresh = True
             self.index = i
-            control.setTarget(self.queue[i][0], self.queue[i][2])
+            #control.setTarget(self.queue[i][0], self.queue[i][2])
 
             time.sleep(self.queue[i][1])
             if (self.queue[i][0] == 1 or self.queue[i][0] == 2):
                 pass
-                control.setTarget(self.queue[i][0], 6000])
+                #control.setTarget(self.queue[i][0], 6000)
         self.done = True
-        print("Ran Queue")
+        #print("Ran Queue")
         self.complete = 1
         self.c.grid_remove()
+        #self.resetAllServos()
+
+    def resetAllServos(self):
+        control = Maestro.Controller()
+        control.setTarget(0, 6000)
+        control.setTarget(3, 6000)
+        control.setTarget(4, 6000)
+        pass
 
     def getComplete(self):
         if self.complete == 1:
