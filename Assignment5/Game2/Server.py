@@ -24,14 +24,16 @@ class Server():
         global clientsocket
 
     def disconnect(self):
+        global serverSocket
+        global clientsocket
         clientsocket.close()
         serverSocket.close()
 
     def get_ip_address(self):
         ipArray = ni.interfaces()
         print(ipArray)
-        ni.ifaddresses('wlp1s0')
-        self.ip = ni.ifaddresses('wlp1s0')[ni.AF_INET][0]['addr']
+        ni.ifaddresses('wlan0')
+        self.ip = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
         print (self.ip)  # should print "192.168.100.37"
 
     def startServer(self):

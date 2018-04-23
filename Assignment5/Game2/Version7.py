@@ -1,0 +1,684 @@
+# 4_5_5_Ways_To_Fail_Robots
+
+# Labs for CSCI - 455 Robotics - Embedded Systems
+# Assignment 5
+# The work is this repository belongs to Garret Hilton and Meshal Albaiz. Any
+# use of this work without citation for academic purposes at Montana State
+# University will be considered academic misconduct and plagiarism. The authors
+# claim no liability for improper use of work contained in this repository.
+# Use at your own risk.
+
+import time
+import tkinter as tk
+from tkinter import *
+from tkinter import font
+from tkinter import messagebox
+import _thread
+import Run
+import Server
+import Space
+import random
+import time
+import Maestro
+
+class Gui():
+    def __init__(self, r, c=None):
+
+        #self.init = start1
+        #if self.init == True:
+        #    self.makeMap()
+        self.gameOver = False
+        self.lostGame = False
+        self.wonGame = False
+        self.messageRecieved = False
+        self.keyFound = False
+        self.queueLoop = True
+        self.orientation = "null"
+        self.init = False
+        self.client = c
+        self.root = r
+        self.position = 0
+        self.fightFlag = 0
+        self.playerHealth = 100
+        self.root.attributes('-fullscreen', True)
+        self.speed = .8
+        self.timeToWait = 5
+        self.x = 10
+        self.y = 50
+        self.deltaX1 = 0
+        self.deltaY1 = 0
+        self.buttonID = 0
+        self.font1 = font.Font(family="Times",size=30, weight="bold", slant="italic")
+        self.font2 = font.Font(family="Times",size=14, weight="bold")
+        self.font3 = font.Font(family="Times",size=20, weight="bold", slant="italic")
+        self.font4 = font.Font(family="Courier",size=16, weight="bold")
+        self.canvasW = 610
+        self.canvasH = 430
+        self.c = tk.Canvas(self.root, bg="#333333", width = self.canvasW, height=self.canvasH)
+        self.c.bind('<B1-Motion>', self.mouseDragged)
+        self.c.bind('<ButtonPress-1>', self.mousePressed)
+        self.c.bind('<ButtonRelease-1>', self.mouseRelease)
+        r.title("TangoBot")
+        self.c.grid(row=1, column=1, rowspan=5, columnspan=5)
+        self.server = Server.Server()
+        self.startServer()
+        self.makeMap()
+        self.printMapGui()
+        button = tk.Button(self.root, width="15", text="Start Game", font=self.font2, bg="blue", fg="yellow", command=self.startGame)
+        button.grid(row=6, column=5)
+        #self.checkQueueFlag()
+
+    def checkQueueFlag(self):
+        try:
+            _thread.start_new_thread(self.lookForQueue, ())
+            print("New Queue Flag Checker Started")
+        except:
+            print ("Error: unable to get queue")
+
+    def lookForQueue(self):
+        while(self.queueLoop):
+            test = self.server.getQueue()
+            if (test != 'null'):
+                print("1:" + test)
+                if (False == self.checkValidMove(test)):
+                    self.queueLoop = False
+                    self.server.tts("Invalid move")
+                    time.sleep(1)
+                    print("Invalid Message#" + test + "#" )
+                else:
+                    if (self.fightFlag == 0):
+                        print("move")
+                        self.movePlayer(test)
+                        self.queueLoop = False
+                        self.server.setQueueFlag()
+                        self.messageRecieved = True
+                    else:
+                        print("fight")
+                        self.fightRun(test)
+                        self.queueLoop = False
+                        self.server.setQueueFlag()
+                        self.messageRecieved = True
+                if((test != "north") or (test != "south") or (test != "east") or (test != "west") or (test != "run") or (test != "fight")):
+                    self.messageRecieved = True
+            else:
+                pass
+                #print("Null Message")
+                #print(test)
+            self.queueLoop = True
+
+    def fightRun(self, message):
+        runFlag = False
+        if (message == "run"):
+
+            chance = random.randint(1,4)
+            if chance == 4:
+                print("failed to run")
+                message = "fight"
+                runFlag = True
+            else:
+                pos = False
+                while(pos == False):
+                    rand = random.randint(0,8)
+                    if (self.position != rand):
+                        pos = True
+                control = Maestro.Controller()
+                control.setTarget(2, 7000)
+                time.sleep(1 + random.randint(1,3))
+                control.setTarget(2, 6000)
+                self.position = rand
+                self.playerPosition = self.map[self.position]
+                print(self.position)
+        if (message == "fight"):
+            self.hit(runFlag)
+            print("Fighting")
+
+    def hit(self,runFlag):
+        badGuyH = self.playerPosition.getHealth()
+        if(runFlag == False):
+            control = Maestro.Controller()
+            control.setTarget(0, 4000)
+            control.setTarget(3, 4000)
+            control.setTarget(4, 4000)
+            control.setTarget(6, 4000)
+            control.setTarget(8, 4000)
+            control.setTarget(12, 4000)
+            control.setTarget(14, 4000)
+            time.sleep(0.5)
+            control.setTarget(0, 8000)
+            control.setTarget(3, 8000)
+            control.setTarget(4, 8000)
+            control.setTarget(6, 8000)
+            control.setTarget(8, 8000)
+            control.setTarget(12, 8000)
+            control.setTarget(14, 4000)
+            time.sleep(0.5)
+            self.resetAllServos()
+            dmg = random.randint(32, 40)
+            badGuyH -= dmg
+            self.playerPosition.setHealth(badGuyH)
+        if badGuyH > 0:
+            edmg = self.playerPosition.getDMG()
+            edmg = random.randint(edmg-5, edmg+5)
+            self.playerHealth -= edmg
+            print("Player health is: " + str(self.playerHealth))
+            if (self.playerHealth < 20):
+                message = "Warning: low health"
+                self.server.tts(message)
+                time.sleep(3)
+            if (self.playerHealth < 0):
+                print("You have been slain")
+                message = "You have been slain"
+                self.server.tts(message)
+                self.gameOver = True
+                self.lostGame = True
+
+        else:
+            self.playerPosition.setPrintValue("D")
+            self.server.tts("Enemy killed")
+            time.sleep(1)
+            if (self.playerPosition.getKey() == True):
+                self.keyFound = True
+                print("Key Found")
+                self.server.tts("Key Found!!!")
+                time.sleep(2)
+
+    def resetAllServos(self):
+        control = Maestro.Controller()
+        control.setTarget(0, 6000)
+        control.setTarget(1, 6000)
+        control.setTarget(2, 6000)
+        control.setTarget(3, 6000)
+        control.setTarget(4, 6000)
+        control.setTarget(6, 6000)
+        control.setTarget(8, 6000)
+        control.setTarget(12, 6000)
+        control.setTarget(14, 6000)
+
+    def startGame(self):
+        self.orientation = "North"
+        self.playerHealth = 100
+        self.keyFound = False
+        self.playerPosition = self.map[self.startPos]
+        self.position = self.startPos
+        directions = self.playerPosition.getDir()
+        if directions[0] == True:
+            self.orientation = 'North'
+        elif directions[1] == True:
+            self.orientation = 'South'
+        elif directions[2] == True:
+            self.orientation = 'West'
+        elif directions[3] == True:
+            self.orientation = 'East'
+        facing = ("Facing " + self.orientation)
+        self.server.tts(facing)
+        time.sleep(2)
+        print("You are facing " + self.orientation)
+        #self.gameOver = False
+        self.position = self.startPos
+        #print(self.playerPosition.getObject())
+        #print(self.playerPosition.getPaths())
+        #message = self.playerPosition.getPaths()
+        #self.server.tts(message)
+        print("Player Position = " + str(self.position))
+        control = Maestro.Controller()
+        control.setTarget(1, 6000)
+        while self.gameOver == False:
+
+            self.messageRecieved = False
+            self.playerPosition = self.map[self.position]
+            if(self.playerPosition.getPrintValue() == "R"):
+                self.playerHealth = 100
+                message = "Health Restored"
+                self.server.tts(message)
+                time.sleep(3)
+            self.setFightFlag()
+            #message = self.playerPosition.getPaths()
+            #self.server.tts(message)
+            #time.sleep(3)
+            self.printMapGui()
+            if ((self.map[self.position].getPrintValue() == "E") and (self.keyFound == True)):
+                self.checkEndGame()
+            elif (self.fightFlag == 1):
+                health = self.playerPosition.getHealth()
+                message = "The Enemy has " + str(health) + " health."
+                self.server.tts(message)
+                time.sleep(3)
+                message = "Do you want to fight or run?"
+                self.server.tts(message)
+                time.sleep(3)
+                self.checkQueueFlag()
+                self.server.stt()
+                while(self.messageRecieved == False):
+                    pass
+            else:
+                message = self.playerPosition.getPaths()
+                self.server.tts(message)
+                time.sleep(3)
+                self.checkQueueFlag()
+                self.server.stt()
+                while(self.messageRecieved == False):
+                    pass
+            self.printMapGui()
+
+
+        self.setQueueLoop = False
+        print(self.position)
+        if(self.wonGame == True):
+            print("You Win")
+            control = Maestro.Controller()
+            control.setTarget(12, 9000)
+            control.setTarget(6, 8000)
+            self.server.tts("YOU WIN!!!")
+        if(self.lostGame == True):
+            print("You Lose")
+            self.server.tts("YOU LOSE!!!")
+        #self.server.disconnect()
+
+    def setFightFlag(self):
+        if ((self.playerPosition.getPrintValue() == "H") or (self.playerPosition.getPrintValue() == "W") or (self.playerPosition.getPrintValue() == "K")):
+            self.fightFlag = 1
+        else:
+            self.fightFlag = 0
+
+    def checkEndGame(self):
+        print(self.map[self.position].getPrintValue())
+        if ((self.map[self.position].getPrintValue() == "E") and (self.keyFound == True)):
+            self.gameOver = True
+            self.wonGame = True
+
+    def checkValidMove(self, message):
+        validMoves = self.map[self.position].getDir()
+        if ((message == "north") and (validMoves[0] == True)):
+            return True
+        elif ((message == "south") and (validMoves[1] == True)):
+            return True
+        elif ((message == "west") and (validMoves[2] == True)):
+            return True
+        elif ((message == "east") and (validMoves[3] == True)):
+            return True
+        elif ((message == "fight") or (message == "run")):
+            return True
+        else:
+            return False
+
+    def movePlayer(self, message):
+        control = Maestro.Controller()
+        if(message == "north"):
+            if(self.orientation == "North"):
+                self.orientation = "North"
+                self.position = self.position - 3
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "South"):
+                self.orientation = "North"
+                self.position = self.position - 3
+                control.setTarget(2, 5000)
+                time.sleep(1.7)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "West"):
+                self.orientation = "North"
+                self.position = self.position - 3
+                control.setTarget(2, 5000)
+                time.sleep(1.1)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "East"):
+                self.orientation = "North"
+                self.position = self.position - 3
+                control.setTarget(2, 7000)
+                time.sleep(1.3)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+        elif(message == "south"):
+            if(self.orientation == "North"):
+                self.orientation = "South"
+                self.position = self.position + 3
+                control.setTarget(2, 5000)
+                time.sleep(1.7)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "South"):
+                self.orientation = "South"
+                self.position = self.position + 3
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "West"):
+                self.orientation = "South"
+                self.position = self.position + 3
+                control.setTarget(2, 7000)
+                time.sleep(1.3)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "East"):
+                self.orientation = "South"
+                self.position = self.position + 3
+                control.setTarget(2, 5000)
+                time.sleep(1.1)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+        elif(message == "west"):
+            if(self.orientation == "North"):
+                self.orientation = "West"
+                self.position = self.position - 1
+                control.setTarget(2, 7000)
+                time.sleep(1.3)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "South"):
+                self.orientation = "West"
+                self.position = self.position - 1
+                control.setTarget(2, 5000)
+                time.sleep(1.1)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "West"):
+                self.orientation = "West"
+                self.position = self.position - 1
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "East"):
+                self.orientation = "West"
+                self.position = self.position - 1
+                control.setTarget(2, 7000)
+                time.sleep(1.7)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+        elif(message == "east"):
+            if(self.orientation == "North"):
+                self.orientation = "East"
+                self.position = self.position + 1
+                control.setTarget(2, 5000)
+                time.sleep(1.1)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "South"):
+                self.orientation = "East"
+                self.position = self.position + 1
+                control.setTarget(2, 7000)
+                time.sleep(1.3)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "West"):
+                self.orientation = "East"
+                self.position = self.position + 1
+                control.setTarget(2, 5000)
+                time.sleep(1.7)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+            elif(self.orientation == "East"):
+                self.orientation = "East"
+                self.position = self.position + 1
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
+        else:
+            print("Invalid Message")
+            self.server.tts("Invalid message")
+            time.sleep(1)
+        if ((self.map[self.position].getPrintValue == "H") or (self.map[self.position].getPrintValue == "W") or (self.map[self.position].getPrintValue == "K")):
+            self.fightFlag = 1
+        else:
+            self.fightFlag = 0
+        print("Position after move")
+        print(self.position)
+        #self.resetAllServos()
+
+
+    def makeMap(self):
+        self.test = "hello"
+        num = [1, 2, 3, 6, 7, 8, 11, 12, 13]
+        self.s1 = Space.Space(num[0])
+        p = ["0","0","0","E"]
+        self.s1.setPaths(p)
+        self.s2 = Space.Space(num[1])
+        p = ["0","S","W","E"]
+        self.s2.setPaths(p)
+        self.s3 = Space.Space(num[2])
+        p = ["0","S","W","0"]
+        self.s3.setPaths(p)
+        self.s6 = Space.Space(num[3])
+        p = ["0","S","0","E"]
+        self.s6.setPaths(p)
+        self.s7 = Space.Space(num[4])
+        p = ["N","S","W","0"]
+        self.s7.setPaths(p)
+        self.s8 = Space.Space(num[5])
+        p = ["N","0","0","0"]
+        self.s8.setPaths(p)
+        self.s11 = Space.Space(num[6])
+        p = ["N","0","0","0"]
+        self.s11.setPaths(p)
+        self.s12 = Space.Space(num[7])
+        p = ["N","0","0","E"]
+        self.s12.setPaths(p)
+        self.s13 = Space.Space(num[8])
+        p = ["0","0","W","0"]
+        self.s13.setPaths(p)
+        self.map = [self.s1, self.s2, self.s3, self.s6, self.s7, self.s8, self.s11, self.s12, self.s13]
+        self.placeObjects()
+        pass
+
+    def placeObjects(self):
+        self.placeStartEnd()
+        self.placeWeakBadGuy()
+        self.placeHardBadGuy()
+        self.placeKey()
+        self.placeRegen()
+        self.printMap()
+
+
+    def placeStartEnd(self):
+        start = random.randint(1,4)
+        done = False
+        while done == False:
+            end = random.randint(1,4)
+            if end != start:
+                done = True
+        if start == 1:
+            self.s1.setObject("Start")
+            self.s1.setPrintValue("S")
+            self.startPos = 0
+        elif start == 2:
+            self.s3.setObject("Start")
+            self.s3.setPrintValue("S")
+            self.startPos = 2
+        elif start == 3:
+            self.s11.setObject("Start")
+            self.s11.setPrintValue("S")
+            self.startPos = 6
+        elif start == 4:
+            self.s13.setObject("Start")
+            self.s13.setPrintValue("S")
+            self.startPos = 8
+        if end == 1:
+            self.s1.setObject("End")
+            self.s1.setPrintValue("E")
+        elif end == 2:
+            self.s3.setObject("End")
+            self.s3.setPrintValue("E")
+        elif end == 3:
+            self.s11.setObject("End")
+            self.s11.setPrintValue("E")
+        elif end == 4:
+            self.s13.setObject("End")
+            self.s13.setPrintValue("E")
+        print("Placed Start and End")
+
+    def printMap(self):
+        print(self.s1.getPrintValue() + "-" + self.s2.getPrintValue() + "-" + self.s3.getPrintValue() )
+        print("  | |")
+        print(self.s6.getPrintValue() + "-" + self.s7.getPrintValue() + " " + self.s8.getPrintValue() )
+        print("| |  ")
+        print(self.s11.getPrintValue() + " " + self.s12.getPrintValue() + "-" + self.s13.getPrintValue() )
+
+    def placeKey(self):
+        done = False
+        print("Placing Key")
+        while done == False:
+            key = random.randint(0,8)
+            if self.map[key].getObject() == "Bad Guy Hard":
+                self.map[key].setKey()
+                self.map[key].setPrintValue("K")
+                done = True
+                print("Key Placed")
+        #print("Key is in Space ")
+        #print(self.map[key].getNum())
+        #print(self.map[key].getObject())
+    def placeWeakBadGuy(self):
+        done = False
+        count = 0
+        print("Placing Weak Bad Guys")
+        while done == False:
+            badguy = random.randint(0,8)
+            if self.map[badguy].getObject() == "null":
+                self.map[badguy].setObject("Bad Guy Weak")
+                self.map[badguy].setPrintValue("W")
+                self.map[badguy].setHealth(50)
+                self.map[badguy].setDMG(10)
+                count += 1
+                if count == 4:
+                    done = True
+                    print("Weak Bad Guys Placed")
+
+    def placeHardBadGuy(self):
+        done = False
+        count = 0
+        print("Placing Hard Bad Guys")
+        while done == False:
+            badguy = random.randint(0,8)
+            if self.map[badguy].getObject() == "null":
+                self.map[badguy].setObject("Bad Guy Hard")
+                self.map[badguy].setPrintValue("H")
+                self.map[badguy].setHealth(100)
+                self.map[badguy].setDMG(25)
+                count += 1
+                if count == 2:
+                    done = True
+                    print("Hard Bad Guys Placed")
+    def placeRegen(self):
+        done = False
+        print("Placing Regen")
+        while done == False:
+            regen = random.randint(0,8)
+            if self.map[regen].getObject() == "null":
+                self.map[regen].setObject("Regen")
+                self.map[regen].setPrintValue("R")
+                done = True
+                print("Regen Placed")
+
+    def stt(self):
+        self.server.stt()
+
+    def startServer(self):
+        self.server.startServer()
+
+    def closeWindow(self):
+        pass
+
+
+    def drawStuff(self):
+        self.c.delete("all")
+        self.c.create_rectangle(160, 50, 500, 300, width=5, fill="#444444")
+
+
+    def mousePressed(self, event):
+        self.deltaX1 = event.x - 10
+        if (event.x > self.x and event.x < self.x + 145) and (event.y > self.y and event.y < self.y + 45):
+            pass
+        elif (event.x > self.x and event.x < self.x + 145) and (event.y > 105 and event.y < 150):
+            pass
+
+
+    def mouseDragged(self, event):
+        pass
+
+
+
+    def mouseRelease(self, event):
+        pass
+
+    def printMapGui(self):
+        self.c.delete("all")
+        line1 = self.s1.getPrintValue() + "-" + self.s2.getPrintValue() + "-" + self.s3.getPrintValue()
+        line2 = "  | |"
+        line3 = self.s6.getPrintValue() + "-" + self.s7.getPrintValue() + " " + self.s8.getPrintValue()
+        line4 = "| |  "
+        line5 = self.s11.getPrintValue() + " " + self.s12.getPrintValue() + "-" + self.s13.getPrintValue()
+        playerH = "Health :" + str(self.playerHealth)
+        if (self.keyFound == True):
+            key = "Key: Found"
+        else:
+            key = "Key: Not Found"
+        pos = "Position: " + str(self.position + 1)
+        orientation = "Orientation: " + self.orientation
+        self.c.create_rectangle(160, 50, 500, 300, width=5, fill="#444444")
+        self.c.create_text(328, 100,font=self.font4, text=line1, fill="#FFFFFF")
+        self.c.create_text(328, 130,font=self.font4, text=line2, fill="#FFFFFF")
+        self.c.create_text(328, 160,font=self.font4, text=line3, fill="#FFFFFF")
+        self.c.create_text(328, 190,font=self.font4, text=line4, fill="#FFFFFF")
+        self.c.create_text(328, 220,font=self.font4, text=line5, fill="#FFFFFF")
+        self.c.create_text(70, 50,font=self.font2, text=playerH, fill="#FFFFFF")
+        self.c.create_text(70, 80,font=self.font2, text=key, fill="#FFFFFF")
+        self.c.create_text(70, 110,font=self.font2, text=pos, fill="#FFFFFF")
+        self.c.create_text(70, 140,font=self.font2, text=orientation, fill="#FFFFFF")
+        self.c.update()
+
+
+    def move(self):
+        #self.setQueueLoop()
+        pass
+
+    def Fight(self):
+        #self.setQueueLoop()
+        pass
+
+    def wait(self, q1):
+        test = 0
+        while (test != 1):
+            test = q1.getComplete()
+            pass
+        q1.setComplete()
+        print('Made it here')
+        self.drawStuff()
+        queueLoop = True
+        self.setQueueLoop(queueLoop)
+        self.checkQueueFlag()
+
+def __main__():
+
+    root = tk.Tk()
+    start1 = True
+    gui = Gui(root)
+    root.mainloop()
+
+
+
+__main__()

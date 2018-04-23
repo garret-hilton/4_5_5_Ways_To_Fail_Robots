@@ -27,15 +27,21 @@ class Gui():
         #self.init = start1
         #if self.init == True:
         #    self.makeMap()
+        self.gameOver = False
+        self.lostGame = False
+        self.wonGame = False
         self.messageRecieved = False
+        self.keyFound = False
         self.queueLoop = True
-        self.orientation = "null"
+        y
+self.orientation = "null"
         self.init = False
         self.client = c
         self.root = r
         self.position = 0
         self.fightFlag = 0
-        #self.root.attributes('-fullscreen', True)
+        self.playerHealth = 100
+        self.root.attributes('-fullscreen', True)
         self.speed = .8
         self.timeToWait = 5
         self.x = 10
@@ -44,21 +50,21 @@ class Gui():
         self.deltaY1 = 0
         self.buttonID = 0
         self.font1 = font.Font(family="Times",size=30, weight="bold", slant="italic")
-        self.font2 = font.Font(family="Times",size=12, weight="bold", slant="italic")
+        self.font2 = font.Font(family="Times",size=14, weight="bold")
         self.font3 = font.Font(family="Times",size=20, weight="bold", slant="italic")
-        self.font4 = font.Font(family="Courier",size=11, weight="bold")
-        self.canvasW = 510
-        self.canvasH = 330
+        self.font4 = font.Font(family="Courier",size=16, weight="bold")
+        self.canvasW = 610
+        self.canvasH = 430
         self.c = tk.Canvas(self.root, bg="#333333", width = self.canvasW, height=self.canvasH)
         self.c.bind('<B1-Motion>', self.mouseDragged)
         self.c.bind('<ButtonPress-1>', self.mousePressed)
         self.c.bind('<ButtonRelease-1>', self.mouseRelease)
-        self.drawStuff()
         r.title("TangoBot")
         self.c.grid(row=1, column=1, rowspan=5, columnspan=5)
         self.server = Server.Server()
         self.startServer()
         self.makeMap()
+        self.printMapGui()
         button = tk.Button(self.root, width="15", text="Start Game", font=self.font2, bg="blue", fg="yellow", command=self.startGame)
         button.grid(row=6, column=5)
         #self.checkQueueFlag()
@@ -74,17 +80,21 @@ class Gui():
         while(self.queueLoop):
             test = self.server.getQueue()
             if (test != 'null'):
-                #print(test)
+                print("1:" + test)
                 if (False == self.checkValidMove(test)):
                     self.queueLoop = False
+                    self.server.tts("Invalid move")
+                    time.sleep(1)
                     print("Invalid Message#" + test + "#" )
                 else:
                     if (self.fightFlag == 0):
+                        print("move")
                         self.movePlayer(test)
                         self.queueLoop = False
                         self.server.setQueueFlag()
                         self.messageRecieved = True
                     else:
+                        print("fight")
                         self.fightRun(test)
                         self.queueLoop = False
                         self.server.setQueueFlag()
@@ -98,25 +108,95 @@ class Gui():
             self.queueLoop = True
 
     def fightRun(self, message):
+        runFlag = False
         if (message == "run"):
+
             chance = random.randint(1,4)
-            if change ==4:
+            if chance == 4:
                 print("failed to run")
+                message = "fight"
+                runFlag = True
             else:
-                rand = random.randint(0,8)
-                self.position = random
-        else:
+                pos = False
+                while(pos == False):
+                    rand = random.randint(0,8)
+                    if (self.position != rand):
+                        pos = True
+                control = Maestro.Controller()
+                control.setTarget(2, 7000)
+                time.sleep(1 + random.randint(1,3))
+                control.setTarget(2, 6000)
+                self.position = rand
+                self.playerPosition = self.map[self.position]
+                print(self.position)
+        if (message == "fight"):
+            self.hit(runFlag)
             print("Fighting")
 
+    def hit(self,runFlag):
+        badGuyH = self.playerPosition.getHealth()
+        if(runFlag == False):
+            control = Maestro.Controller()
+            control.setTarget(0, 4000)
+            control.setTarget(3, 4000)
+            control.setTarget(4, 4000)
+            control.setTarget(6, 4000)
+            control.setTarget(8, 4000)
+            control.setTarget(12, 4000)
+            control.setTarget(14, 4000)
+            time.sleep(0.5)
+            control.setTarget(0, 8000)
+            control.setTarget(3, 8000)
+            control.setTarget(4, 8000)
+            control.setTarget(6, 8000)
+            control.setTarget(8, 8000)
+            control.setTarget(12, 8000)
+            control.setTarget(14, 4000)
+            time.sleep(0.5)
+            self.resetAllServos()
+            dmg = random.randint(32, 40)
+            badGuyH -= dmg
+            self.playerPosition.setHealth(badGuyH)
+        if badGuyH > 0:
+            edmg = self.playerPosition.getDMG()
+            edmg = random.randint(edmg-5, edmg+5)
+            self.playerHealth -= edmg
+            print("Player health is: " + str(self.playerHealth))
+            if (self.playerHealth < 20):
+                message = "Warning: low health"
+                self.server.tts(message)
+                time.sleep(3)
+            if (self.playerHealth < 0):
+                print("You have been slain")
+                message = "You have been slain"
+                self.server.tts(message)
+                self.gameOver = True
+                self.lostGame = True
+
+        else:
+            self.playerPosition.setPrintValue("D")
+            self.server.tts("Enemy killed")
+            time.sleep(1)
+            if (self.playerPosition.getKey() == True):
+                self.keyFound = True
+                print("Key Found")
+                self.server.tts("Key Found!!!")
+                time.sleep(2)
 
     def resetAllServos(self):
         control = Maestro.Controller()
         control.setTarget(0, 6000)
+        control.setTarget(1, 6000)
+        control.setTarget(2, 6000)
         control.setTarget(3, 6000)
         control.setTarget(4, 6000)
+        control.setTarget(6, 6000)
+        control.setTarget(8, 6000)
+        control.setTarget(12, 6000)
+        control.setTarget(14, 6000)
 
     def startGame(self):
-
+        self.orientation = "North"
         self.playerHealth = 100
         self.keyFound = False
         self.playerPosition = self.map[self.startPos]
@@ -125,49 +205,87 @@ class Gui():
         if directions[0] == True:
             self.orientation = 'North'
         elif directions[1] == True:
-            self.orientation = 'Sorth'
+            self.orientation = 'South'
         elif directions[2] == True:
             self.orientation = 'West'
         elif directions[3] == True:
             self.orientation = 'East'
+        facing = ("Facing " + self.orientation)
+        self.server.tts(facing)
+        time.sleep(2)
         print("You are facing " + self.orientation)
-        self.gameOver = False
+        #self.gameOver = False
         self.position = self.startPos
-        print(self.playerPosition.getObject())
-        print(self.playerPosition.getPaths())
+        #print(self.playerPosition.getObject())
+        #print(self.playerPosition.getPaths())
         #message = self.playerPosition.getPaths()
         #self.server.tts(message)
         print("Player Position = " + str(self.position))
         while self.gameOver == False:
             self.messageRecieved = False
             self.playerPosition = self.map[self.position]
-            message = self.playerPosition.getPaths()
-            self.server.tts(message)
-            time.sleep(3)
-            if (self.fightFlag == 1):
+            if(self.playerPosition.getPrintValue() == "R"):
+                self.playerHealth = 100
+                message = "Health Restored"
+                self.server.tts(message)
+                time.sleep(3)
+            self.setFightFlag()
+            #message = self.playerPosition.getPaths()
+            #self.server.tts(message)
+            #time.sleep(3)
+            self.printMapGui()
+            if ((self.map[self.position].getPrintValue() == "E") and (self.keyFound == True)):
+                self.checkEndGame()
+            elif (self.fightFlag == 1):
+                health = self.playerPosition.getHealth()
+                message = "The Enemy has " + str(health) + " health."
+                self.server.tts(message)
+                time.sleep(3)
+                message = "Do you want to fight or run?"
+                self.server.tts(message)
+                time.sleep(3)
                 self.checkQueueFlag()
                 self.server.stt()
+                while(self.messageRecieved == False):
+                    pass
             else:
+                message = self.playerPosition.getPaths()
+                self.server.tts(message)
+                time.sleep(3)
                 self.checkQueueFlag()
                 self.server.stt()
-            while(self.messageRecieved == False):
-                pass
-            self.checkEndGame()
+                while(self.messageRecieved == False):
+                    pass
+            self.printMapGui()
+
+
         self.setQueueLoop = False
         print(self.position)
-        print("You Win or Lose")
+        if(self.wonGame == True):
+            print("You Win")
+            control = Maestro.Controller()
+            control.setTarget(12, 8000)
+            control.setTarget(6, 8000)
+            self.server.tts("YOU WIN!!!")
+        if(self.lostGame == True):
+            print("You Lose")
+            self.server.tts("YOU LOSE!!!")
         #self.server.disconnect()
+
+    def setFightFlag(self):
+        if ((self.playerPosition.getPrintValue() == "H") or (self.playerPosition.getPrintValue() == "W") or (self.playerPosition.getPrintValue() == "K")):
+            self.fightFlag = 1
+        else:
+            self.fightFlag = 0
 
     def checkEndGame(self):
         print(self.map[self.position].getPrintValue())
-        if (self.map[self.position].getPrintValue() == "E"):
+        if ((self.map[self.position].getPrintValue() == "E") and (self.keyFound == True)):
             self.gameOver = True
-        else:
-            self.gameOver = False
+            self.wonGame = True
 
     def checkValidMove(self, message):
         validMoves = self.map[self.position].getDir()
-        print(validMoves)
         if ((message == "north") and (validMoves[0] == True)):
             return True
         elif ((message == "south") and (validMoves[1] == True)):
@@ -182,143 +300,147 @@ class Gui():
             return False
 
     def movePlayer(self, message):
-        #control = Maestro.Controller()
+        control = Maestro.Controller()
         if(message == "north"):
             if(self.orientation == "North"):
                 self.orientation = "North"
                 self.position = self.position - 3
-                #control.setTarget(0, 5000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
             elif(self.orientation == "South"):
                 self.orientation = "North"
                 self.position = self.position - 3
-                #control.setTarget(2, 5000)
-                time.sleep(2.2)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 5000)
+                control.setTarget(2, 5000)
+                time.sleep(1.7)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
             elif(self.orientation == "West"):
-                self.orientation == "North"
+                self.orientation = "North"
                 self.position = self.position - 3
-                #control.setTarget(2, 5000)
+                control.setTarget(2, 5000)
                 time.sleep(1.1)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 5000)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
             elif(self.orientation == "East"):
-                self.orientation == "North"
+                self.orientation = "North"
                 self.position = self.position - 3
-                #control.setTarget(2, 7000)
+                control.setTarget(2, 7000)
                 time.sleep(1.3)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 5000)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
         elif(message == "south"):
             if(self.orientation == "North"):
                 self.orientation = "South"
                 self.position = self.position + 3
-                #control.setTarget(2, 5000)
-                time.sleep(2.2)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 6000)
+                control.setTarget(2, 5000)
+                time.sleep(1.7)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
+                time.sleep(1)
+                control.setTarget(1, 6000)
             elif(self.orientation == "South"):
                 self.orientation = "South"
                 self.position = self.position + 3
-                #control.setTarget(0, 5000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
             elif(self.orientation == "West"):
-                self.orientation == "South"
+                self.orientation = "South"
                 self.position = self.position + 3
-                #control.setTarget(2, 7000)
+                control.setTarget(2, 7000)
                 time.sleep(1.3)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 5000)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
             elif(self.orientation == "East"):
-                self.orientation == "South"
+                self.orientation = "South"
                 self.position = self.position + 3
-                #control.setTarget(2, 5000)
+                control.setTarget(2, 5000)
                 time.sleep(1.1)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 5000)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
         elif(message == "west"):
             if(self.orientation == "North"):
                 self.orientation = "West"
                 self.position = self.position - 1
-                #control.setTarget(2, 7000)
+                control.setTarget(2, 7000)
                 time.sleep(1.3)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 5000)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
             elif(self.orientation == "South"):
                 self.orientation = "West"
                 self.position = self.position - 1
-                #control.setTarget(2, 5000)
+                control.setTarget(2, 5000)
                 time.sleep(1.1)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 5000)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
             elif(self.orientation == "West"):
-                self.orientation == "West"
+                self.orientation = "West"
                 self.position = self.position - 1
-                #control.setTarget(0, 5000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
             elif(self.orientation == "East"):
-                self.orientation == "West"
+                self.orientation = "West"
                 self.position = self.position - 1
-                #control.setTarget(2, 7000)
-                time.sleep(2.3)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 5000)
+                control.setTarget(2, 7000)
+                time.sleep(1.7)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
         elif(message == "east"):
             if(self.orientation == "North"):
                 self.orientation = "East"
                 self.position = self.position + 1
-                #control.setTarget(2, 5000)
+                control.setTarget(2, 5000)
                 time.sleep(1.1)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 5000)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
             elif(self.orientation == "South"):
                 self.orientation = "East"
                 self.position = self.position + 1
-                #control.setTarget(2, 7000)
+                control.setTarget(2, 7000)
                 time.sleep(1.3)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 5000)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
             elif(self.orientation == "West"):
-                self.orientation == "East"
+                self.orientation = "East"
                 self.position = self.position + 1
-                #control.setTarget(2, 5000)
-                time.sleep(2.2)
-                #control.setTarget(2, 6000)
-                #control.setTarget(0, 5000)
+                control.setTarget(2, 5000)
+                time.sleep(1.7)
+                control.setTarget(2, 6000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
             elif(self.orientation == "East"):
-                self.orientation == "East"
+                self.orientation = "East"
                 self.position = self.position + 1
-                #control.setTarget(0, 5000)
+                control.setTarget(1, 5000)
                 time.sleep(1)
-                #control.setTarget(0, 6000)
+                control.setTarget(1, 6000)
         else:
             print("Invalid Message")
+            self.server.tts("Invalid message")
+            time.sleep(1)
         if ((self.map[self.position].getPrintValue == "H") or (self.map[self.position].getPrintValue == "W") or (self.map[self.position].getPrintValue == "K")):
             self.fightFlag = 1
         else:
@@ -369,7 +491,6 @@ class Gui():
         self.placeKey()
         self.placeRegen()
         self.printMap()
-        self.printMapGui()
 
 
     def placeStartEnd(self):
@@ -439,7 +560,7 @@ class Gui():
                 self.map[badguy].setObject("Bad Guy Weak")
                 self.map[badguy].setPrintValue("W")
                 self.map[badguy].setHealth(50)
-                self.map[badguy].setDMG(5)
+                self.map[badguy].setDMG(10)
                 count += 1
                 if count == 4:
                     done = True
@@ -455,7 +576,7 @@ class Gui():
                 self.map[badguy].setObject("Bad Guy Hard")
                 self.map[badguy].setPrintValue("H")
                 self.map[badguy].setHealth(100)
-                self.map[badguy].setDMG(20)
+                self.map[badguy].setDMG(25)
                 count += 1
                 if count == 2:
                     done = True
@@ -503,16 +624,30 @@ class Gui():
         pass
 
     def printMapGui(self):
+        self.c.delete("all")
         line1 = self.s1.getPrintValue() + "-" + self.s2.getPrintValue() + "-" + self.s3.getPrintValue()
         line2 = "  | |"
         line3 = self.s6.getPrintValue() + "-" + self.s7.getPrintValue() + " " + self.s8.getPrintValue()
         line4 = "| |  "
         line5 = self.s11.getPrintValue() + " " + self.s12.getPrintValue() + "-" + self.s13.getPrintValue()
-        self.c.create_text(328, 140,font=self.font4, text=line1, fill="#777777")
-        self.c.create_text(328, 160,font=self.font4, text=line2, fill="#777777")
-        self.c.create_text(328, 180,font=self.font4, text=line3, fill="#777777")
-        self.c.create_text(328, 200,font=self.font4, text=line4, fill="#777777")
-        self.c.create_text(328, 220,font=self.font4, text=line5, fill="#777777")
+        playerH = "Health :" + str(self.playerHealth)
+        if (self.keyFound == True):
+            key = "Key: Found"
+        else:
+            key = "Key: Not Found"
+        pos = "Position: " + str(self.position + 1)
+        orientation = "Orientation: " + self.orientation
+        self.c.create_rectangle(160, 50, 500, 300, width=5, fill="#444444")
+        self.c.create_text(328, 100,font=self.font4, text=line1, fill="#FFFFFF")
+        self.c.create_text(328, 130,font=self.font4, text=line2, fill="#FFFFFF")
+        self.c.create_text(328, 160,font=self.font4, text=line3, fill="#FFFFFF")
+        self.c.create_text(328, 190,font=self.font4, text=line4, fill="#FFFFFF")
+        self.c.create_text(328, 220,font=self.font4, text=line5, fill="#FFFFFF")
+        self.c.create_text(70, 50,font=self.font2, text=playerH, fill="#FFFFFF")
+        self.c.create_text(70, 80,font=self.font2, text=key, fill="#FFFFFF")
+        self.c.create_text(70, 110,font=self.font2, text=pos, fill="#FFFFFF")
+        self.c.create_text(70, 140,font=self.font2, text=orientation, fill="#FFFFFF")
+        self.c.update()
 
 
     def move(self):
